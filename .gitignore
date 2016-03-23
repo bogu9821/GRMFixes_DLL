@@ -248,3 +248,7 @@ paket-files/
 .idea/
 *.sln.iml
 
+Release_Game/*
+GRMFixes/Release_Game/*
+Release_Spacer/*
+GRMFixes/Release_Spacer/*

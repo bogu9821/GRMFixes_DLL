@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <PluginInterface.h>
+#include "PluginInterface.h"
 #include "GRMFixes.h"
 #include "VersionCheck.h"
 
