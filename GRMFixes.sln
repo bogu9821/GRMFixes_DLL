@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GRMFixes", "GRMFixes\GRMFixes.vcxproj", "{FE5E2236-D420-4CC8-809D-A1D5B994758C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release_Game|x86 = Release_Game|x86
+		Release_Spacer|x86 = Release_Spacer|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FE5E2236-D420-4CC8-809D-A1D5B994758C}.Release_Game|x86.ActiveCfg = Release_Game|Win32
+		{FE5E2236-D420-4CC8-809D-A1D5B994758C}.Release_Game|x86.Build.0 = Release_Game|Win32
+		{FE5E2236-D420-4CC8-809D-A1D5B994758C}.Release_Spacer|x86.ActiveCfg = Release_Spacer|Win32
+		{FE5E2236-D420-4CC8-809D-A1D5B994758C}.Release_Spacer|x86.Build.0 = Release_Spacer|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
