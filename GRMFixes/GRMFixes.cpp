@@ -319,7 +319,7 @@ void FixZENLoadSave()
 	debugPrint(" - lea edx, [eax+eax*2] -> imul edx, eax, 4\n");
 
 #ifndef GAME
-	FixVertexProcessing();
+	//FixVertexProcessing();
 #endif
 
 	debugPrint("Done!\n");
@@ -376,8 +376,10 @@ void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* unknwn, 
 /** Only apply fixes while loading the worldmesh */
 void __fastcall HookedzCBspTreeLoadBin(void* thisptr, void* edx, class zCFileBIN & a1, int a2)
 {
+	bool &isLoadingXZEN = g_IsLoadingXZEN;
+
 	// Apply fixes if the file is right
-	if(g_IsLoadingXZEN)
+	if(isLoadingXZEN)
 	{
 		debugPrint("Loading an enhanced ZEN. Applying code modifications.\n");
 		FixZENLoadSave();
@@ -387,9 +389,9 @@ void __fastcall HookedzCBspTreeLoadBin(void* thisptr, void* edx, class zCFileBIN
 	g_OriginalzCBspTreeLoadBIN(thisptr, a1, a2);
 
 	// Reset everything, worldmesh is done
-	if(g_IsLoadingXZEN)
+	if(isLoadingXZEN)
 	{
-		g_IsLoadingXZEN = false;
+		isLoadingXZEN = false;
 
 		debugPrint("Done loading Mesh! Restoring original code... \n");
 
