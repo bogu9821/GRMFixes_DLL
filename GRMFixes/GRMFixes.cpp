@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "GothicMemoryLocations.h"
 #include "GRMFixes.h"
+#include "scriptAPI.h"
 
 #define debugPrint printf
 
@@ -30,6 +31,9 @@ zCBspTreeLoadBIN g_OriginalzCBspTreeLoadBIN;
 
 typedef int (__thiscall* zCBspTreeSaveBIN)(void*, class zCFileBIN &);
 zCBspTreeSaveBIN g_OriginalzCBspTreeSaveBIN;
+
+typedef void (__thiscall* oCAniCtrl_HumanSetScriptValues)(void*);
+oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
@@ -107,6 +111,11 @@ void __stdcall FasterVertexProcessingHook(zCMesh* mesh, zCArray<zCVertex*>* vert
 	debugPrint("Saving Mesh...\n");
 
 	DWORD startTime = timeGetTime();
+
+	// [VERSION 6] Need to overwrite the poiter here with new memory, as this isn't always valid as it seems. 
+	// It's a minor memory, leak, but since it's only for the spacer, I'm not going to bother
+	vertexList->Array = new zCVertex*[1];
+	featureList->Array = new zCVertFeature*[1];
 
 	// Need to allocate at least *some* data or PushBack will fail.
 	vertexList->Reallocate(1);
@@ -423,6 +432,30 @@ void __fastcall HookedzCBspTreeSaveBin(void* thisptr, void* edx, class zCFileBIN
 	g_OriginalZENLoadSaveAsmBytes.clear();
 }
 
+/**
+ * Fix the climbing-angle
+ * This is called more than once, but meh. Safety!
+ */
+void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
+{
+	// Call this first, to initialize the instance
+	g_OriginaloCAniCtrl_HumanSetScriptValues(thisptr);
+
+	debugPrint("Patching climbing-angle\n");
+
+	
+	const int GIL_HUMAN = 1;
+	Daedalus::oTGilValues* gil = Daedalus::oTGilValues::get();
+	gil->CLIMB_GROUND_ANGLE[GIL_HUMAN] = 50;
+	gil->CLIMB_HEADING_ANGLE[GIL_HUMAN] = 50;
+	gil->CLIMB_HORIZ_ANGLE[GIL_HUMAN] = 50;
+
+	//gil->SURFACE_ALIGN[GIL_HUMAN] = 1;
+
+	// Call another time, to set our new values
+	g_OriginaloCAniCtrl_HumanSetScriptValues(thisptr);
+}
+
 /* Hook functions */
 void ApplyHooks()
 {
@@ -462,6 +495,9 @@ void ApplyHooks()
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
+#else
+	// Hook "EnterWorld" to fix climbing-angle
+	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
 #endif
 }
 

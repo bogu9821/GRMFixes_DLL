@@ -119,6 +119,33 @@ struct GothicMemoryLocations_Game
 		static const int ConstructorCharPtr = 0x004013A0;
 		static const int ToChar = 0x0045E2E0;
 	};
+
+	struct zCParser
+	{
+		static const int inst_parser = 0x008DCE08;
+		static const int getSymbol_STR = 0x006EA520;
+	};
+
+	struct zCParSymbol
+	{
+		static const int setValue_INT = 0x006F8530;
+		static const int getValue_INT = 0x006F86E0;
+	};
+
+	struct oCWorld
+	{
+		static const int enterWorld = 0x0063EAD0;
+	};
+
+	struct oCAniCtrl_Human
+	{
+		static const int SetScriptValues = 0x0061CAF0;
+	};
+
+	struct oTGilValues
+	{
+		static const int instance = 0x008D8C50;
+	};
 };
 
 struct GothicMemoryLocations_Spacer
@@ -168,6 +195,29 @@ struct GothicMemoryLocations_Spacer
 	{
 		static const int ConstructorCharPtr = 0x004010C0;
 		static const int ToChar = 0x005E2EB0;
+	};
+
+	// Don't need these in spacer
+	struct zCParser
+	{
+		static const int inst_parser = 0;
+		static const int getSymbol_STR = 0;
+	};
+
+	struct zCParSymbol
+	{
+		static const int setValue_INT = 0;
+		static const int getValue_INT = 0;
+	};
+
+	struct oCWorld
+	{
+		static const int enterWorld = 0;
+	};
+
+	struct oTGilValues
+	{
+		static const int instance = 0;
 	};
 };
 
