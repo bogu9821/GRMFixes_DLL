@@ -459,7 +459,7 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
 /* Hook functions */
 void ApplyHooks()
 {
-	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 5 for " DLL_TYPE_STR " --------\n");
+	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 6 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
 
