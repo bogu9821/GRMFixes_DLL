@@ -441,7 +441,7 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
 	// Call this first, to initialize the instance
 	g_OriginaloCAniCtrl_HumanSetScriptValues(thisptr);
 
-	debugPrint("Patching climbing-angle\n");
+	//debugPrint("Patching climbing-angle\n");
 
 	
 	const int GIL_HUMAN = 1;
@@ -497,7 +497,12 @@ void ApplyHooks()
 		debugPrint(" - Failure!\n");
 #else
 	// Hook "EnterWorld" to fix climbing-angle
+	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
+	if(g_OriginaloCAniCtrl_HumanSetScriptValues)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
 #endif
 }
 
