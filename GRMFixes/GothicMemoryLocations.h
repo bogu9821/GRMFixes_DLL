@@ -10,6 +10,8 @@
         __asm { mov eax, uAddr  }       \
         __asm { jmp eax                 }
 
+#define THISPTR_OFFSET(x) (((char *)this) + (x))
+
 #ifdef GAME
 #define GothicMemoryLocations GothicMemoryLocations_Game
 #else
@@ -146,6 +148,13 @@ struct GothicMemoryLocations_Game
 	{
 		static const int instance = 0x008D8C50;
 	};
+
+	struct zCModel
+	{
+		static const int Render = 0x00560770;
+		static const unsigned int Offset_ModelFatness = 0x118;
+		static const unsigned int Offset_ModelScale = 0x11C;
+	};
 };
 
 struct GothicMemoryLocations_Spacer
@@ -218,6 +227,13 @@ struct GothicMemoryLocations_Spacer
 	struct oTGilValues
 	{
 		static const int instance = 0;
+	};
+
+	struct zCModel
+	{
+		static const int Render = 0;
+		static const unsigned int Offset_ModelFatness = 0x118;
+		static const unsigned int Offset_ModelScale = 0x11C;
 	};
 };
 

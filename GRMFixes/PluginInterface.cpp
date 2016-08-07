@@ -24,7 +24,7 @@ namespace GPlugin
 #ifdef GAME
 			std::string cmnd = GetCommandLine();
 			std::transform(cmnd.begin(), cmnd.end(), cmnd.begin(), ::toupper);
-
+			
 			if (cmnd.find(TEXT("-GAME:GOTHIC_RELOADED_MOD.INI")) == std::string::npos)
 				return false;
 #endif

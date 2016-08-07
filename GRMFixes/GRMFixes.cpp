@@ -35,6 +35,9 @@ zCBspTreeSaveBIN g_OriginalzCBspTreeSaveBIN;
 typedef void (__thiscall* oCAniCtrl_HumanSetScriptValues)(void*);
 oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 
+typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
+zCModel_Render g_OriginalzCModel_Render;
+
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
 {
@@ -456,6 +459,26 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
 	g_OriginaloCAniCtrl_HumanSetScriptValues(thisptr);
 }
 
+/**
+ * Workaround for the new finger-models breaking on some fatness values
+ */
+void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderContext& ctx)
+{
+	// Fix fatness to a specific value
+	float* pFatness = (float*)(((char*)thisptr) + GothicMemoryLocations::zCModel::Offset_ModelFatness);
+
+	// Configurable fatness-range
+	const float minFatness = 5.0f;
+	const float maxFatness = 5.0f;
+	
+	// Force the fatness to a range given by us
+	*pFatness = std::min(maxFatness, *pFatness);
+	*pFatness = std::max(maxFatness, *pFatness);
+
+	// Continue rendering...
+	g_OriginalzCModel_Render(thisptr, ctx);
+}
+
 /* Hook functions */
 void ApplyHooks()
 {
@@ -503,6 +526,15 @@ void ApplyHooks()
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
+	g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
+	if(g_OriginalzCModel_Render)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	
 #endif
 }
 
