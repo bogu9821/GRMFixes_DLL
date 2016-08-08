@@ -554,14 +554,26 @@ void ApplyHooks()
 	else
 		debugPrint(" - Failure!\n");
 
-	debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
-	g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
-	if(g_OriginalzCModel_Render)
-		debugPrint(" - Success!\n");
-	else
-		debugPrint(" - Failure!\n");
+	// Get path to CGP mod volume
+	char exe[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], mod[MAX_PATH];
+	GetModuleFileName(NULL, exe, MAX_PATH);
+	_splitpath(exe, drive, dir, NULL, NULL);
+	strcpy_s(mod, drive);
+	strcat_s(mod, dir);
+	strcat_s(mod, "..\\Data\\Carnage_Graphics_Patch.mod");
+	_fullpath(mod, mod, MAX_PATH);
 
-	
+	// Is CGP installed?
+	if (GetFileAttributes(mod) != INVALID_FILE_ATTRIBUTES)
+	{
+		// Hook "Mdl_SetModelFatness" to fix human fingers
+		debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
+		g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
+		if (g_OriginalzCModel_Render)
+			debugPrint(" - Success!\n");
+		else
+			debugPrint(" - Failure!\n");
+	}
 #endif
 }
 
