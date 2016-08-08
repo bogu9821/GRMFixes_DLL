@@ -464,16 +464,43 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
  */
 void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderContext& ctx)
 {
-	// Fix fatness to a specific value
+	// Get fatness value
 	float* pFatness = (float*)(((char*)thisptr) + GothicMemoryLocations::zCModel::Offset_ModelFatness);
 
+
+	if (*pFatness == 3.0f)
+		*pFatness = 0.75f;
+	else if (*pFatness == 2.0f)
+		*pFatness = 0.50f;
+	else if (*pFatness == 1.0f)
+		*pFatness = 0.25f;
+	else if (*pFatness == -1.0f)
+		*pFatness = -0.33f;
+
+	/*
 	// Configurable fatness-range
-	const float minFatness = 5.0f;
-	const float maxFatness = 5.0f;
+	const float minFatness = -0.5f;
+	const float maxFatness = 0.5f;
 	
 	// Force the fatness to a range given by us
 	*pFatness = std::min(maxFatness, *pFatness);
-	*pFatness = std::max(maxFatness, *pFatness);
+	*pFatness = std::max(minFatness, *pFatness);
+	*/
+
+	/*
+	// Original fatness-range from the scripts
+	const float a = -1.0f;
+	const float b = 3.0f;
+
+	// New configurable fatness-range
+	const float c = -0.5f;
+	const float d = 0.5f;
+
+	// Force the fatness to the range given by us [a,b] -> [c,d]
+	const float m = ((c - d) / (a - b));
+	const float n = ((a*d - b*c) / (a - b));
+	*pFatness = m*(*pFatness) + n;
+	*/
 
 	// Continue rendering...
 	g_OriginalzCModel_Render(thisptr, ctx);
@@ -482,7 +509,7 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 /* Hook functions */
 void ApplyHooks()
 {
-	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 6 for " DLL_TYPE_STR " --------\n");
+	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 7 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
 
