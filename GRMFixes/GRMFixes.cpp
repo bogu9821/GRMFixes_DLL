@@ -464,46 +464,23 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
  */
 void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderContext& ctx)
 {
-	// Get fatness value
+	// Get fatness value and save it
 	float* pFatness = (float*)(((char*)thisptr) + GothicMemoryLocations::zCModel::Offset_ModelFatness);
+	float pFatnessOrig = *pFatness;
 
-
-	if (*pFatness == 3.0f)
-		*pFatness = 0.75f;
-	else if (*pFatness == 2.0f)
+	// Set fatness value accordingly
+	if ((int)(*pFatness) >= 2)
 		*pFatness = 0.50f;
-	else if (*pFatness == 1.0f)
+	else if ((int)(*pFatness) == 1)
 		*pFatness = 0.25f;
-	else if (*pFatness == -1.0f)
-		*pFatness = -0.33f;
-
-	/*
-	// Configurable fatness-range
-	const float minFatness = -0.5f;
-	const float maxFatness = 0.5f;
-	
-	// Force the fatness to a range given by us
-	*pFatness = std::min(maxFatness, *pFatness);
-	*pFatness = std::max(minFatness, *pFatness);
-	*/
-
-	/*
-	// Original fatness-range from the scripts
-	const float a = -1.0f;
-	const float b = 3.0f;
-
-	// New configurable fatness-range
-	const float c = -0.5f;
-	const float d = 0.5f;
-
-	// Force the fatness to the range given by us [a,b] -> [c,d]
-	const float m = ((c - d) / (a - b));
-	const float n = ((a*d - b*c) / (a - b));
-	*pFatness = m*(*pFatness) + n;
-	*/
+	else if ((int)(*pFatness) <= -1)
+		*pFatness = -0.25f;
 
 	// Continue rendering...
 	g_OriginalzCModel_Render(thisptr, ctx);
+
+	// Restore fatness value
+	*pFatness = pFatnessOrig;
 }
 
 /* Hook functions */
