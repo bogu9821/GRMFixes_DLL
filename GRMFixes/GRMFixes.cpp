@@ -466,21 +466,17 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 {
 	// Get fatness value and save it
 	float* pFatness = (float*)(((char*)thisptr) + GothicMemoryLocations::zCModel::Offset_ModelFatness);
-	float pFatnessOrig = *pFatness;
 
 	// Set fatness value accordingly
-	if ((int)(*pFatness) >= 2)
+	if (*pFatness >= 2.0f)
 		*pFatness = 0.50f;
-	else if ((int)(*pFatness) == 1)
+	else if (*pFatness == 1.0f)
 		*pFatness = 0.25f;
-	else if ((int)(*pFatness) <= -1)
+	else if (*pFatness <= -1.0f)
 		*pFatness = -0.25f;
 
 	// Continue rendering...
 	g_OriginalzCModel_Render(thisptr, ctx);
-
-	// Restore fatness value
-	*pFatness = pFatnessOrig;
 }
 
 /* Hook functions */
