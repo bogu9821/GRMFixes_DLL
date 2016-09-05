@@ -38,6 +38,9 @@ oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
 zCModel_Render g_OriginalzCModel_Render;
 
+typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, zTRnd_TextureStageState, DWORD);
+zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
+
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
 {
@@ -479,9 +482,34 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 	g_OriginalzCModel_Render(thisptr, ctx);
 }
 
+int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, zTRnd_TextureStageState state, DWORD value)
+{
+	const int D3DTFG_ANISOTROPIC = 5;
+	const int D3DTFN_ANISOTROPIC = 3;
+
+	if(state == zRND_TSS_MAGFILTER)
+	{
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFG_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, 16);
+
+		return S_OK;
+	}
+	else if(state == zRND_TSS_MINFILTER)
+	{
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFN_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, 16);
+
+		return S_OK;
+	}else
+	{
+		return g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, value);
+	}	
+}
+
 /* Hook functions */
 void ApplyHooks()
 {
+	MessageBox(nullptr, "","",MB_OK);
 	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 6 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
@@ -492,7 +520,14 @@ void ApplyHooks()
 		debugPrint(" - Failure!\n");
 
 	debugPrint("Applying hook to 'zCBspTree::LoadBIN'\n");
-	g_OriginalzCBspTreeLoadBIN =  (zCBspTreeLoadBIN)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::LoadBIN, (byte*)HookedzCBspTreeLoadBin);
+	g_OriginalzCBspTreeLoadBIN =  (zCBspTreeLoadBIN)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::SetTextureStageState, (byte*)HookedzCRND_D3DSetTextureStageState);
+	if(g_OriginalzCBspTreeLoadBIN)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCRND_D3D::SetTextureStageState'\n");
+	g_OriginalzCRND_D3DSetTextureStageState =  (zCRND_D3DSetTextureStageState)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::LoadBIN, (byte*)HookedzCBspTreeLoadBin);
 	if(g_OriginalzCBspTreeLoadBIN)
 		debugPrint(" - Success!\n");
 	else

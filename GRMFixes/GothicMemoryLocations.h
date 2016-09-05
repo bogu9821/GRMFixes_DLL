@@ -155,6 +155,11 @@ struct GothicMemoryLocations_Game
 		static const unsigned int Offset_ModelFatness = 0x118;
 		static const unsigned int Offset_ModelScale = 0x11C;
 	};
+
+	struct zCRND_D3D
+	{
+		static const int SetTextureStageState = 0x00718270;
+	};
 };
 
 struct GothicMemoryLocations_Spacer
@@ -198,6 +203,11 @@ struct GothicMemoryLocations_Spacer
 	{
 		static const int LoadBIN = 0x004CB080;
 		static const int SaveBIN = 0x004CA220;
+	};
+
+	struct zCRND_D3D
+	{
+		static const int SetTextureStageState = 0x0061E3A0;
 	};
 
 	struct zSTRING
