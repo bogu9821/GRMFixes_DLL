@@ -509,7 +509,7 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 /* Hook functions */
 void ApplyHooks()
 {
-	//MessageBox(nullptr, "","",MB_OK);
+	MessageBox(nullptr, "","",MB_OK);
 	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 7 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
@@ -520,15 +520,15 @@ void ApplyHooks()
 		debugPrint(" - Failure!\n");
 
 	debugPrint("Applying hook to 'zCBspTree::LoadBIN'\n");
-	g_OriginalzCBspTreeLoadBIN =  (zCBspTreeLoadBIN)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::SetTextureStageState, (byte*)HookedzCRND_D3DSetTextureStageState);
+	g_OriginalzCBspTreeLoadBIN =  (zCBspTreeLoadBIN)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::LoadBIN, (byte*)HookedzCBspTreeLoadBin);
 	if(g_OriginalzCBspTreeLoadBIN)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
 
 	debugPrint("Applying hook to 'zCRND_D3D::SetTextureStageState'\n");
-	g_OriginalzCRND_D3DSetTextureStageState =  (zCRND_D3DSetTextureStageState)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::LoadBIN, (byte*)HookedzCBspTreeLoadBin);
-	if(g_OriginalzCBspTreeLoadBIN)
+	g_OriginalzCRND_D3DSetTextureStageState =  (zCRND_D3DSetTextureStageState)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::SetTextureStageState, (byte*)HookedzCRND_D3DSetTextureStageState);
+	if(g_OriginalzCRND_D3DSetTextureStageState)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
