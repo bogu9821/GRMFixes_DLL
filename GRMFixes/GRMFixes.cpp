@@ -467,16 +467,16 @@ void __fastcall HookedoCAniCtrl_HumanSetScriptValues(void* thisptr, void* edx)
  */
 void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderContext& ctx)
 {
-	// Fix fatness to a specific value
+	// Get fatness value and save it
 	float* pFatness = (float*)(((char*)thisptr) + GothicMemoryLocations::zCModel::Offset_ModelFatness);
 
-	// Configurable fatness-range
-	const float minFatness = 5.0f;
-	const float maxFatness = 5.0f;
-	
-	// Force the fatness to a range given by us
-	*pFatness = std::min(maxFatness, *pFatness);
-	*pFatness = std::max(maxFatness, *pFatness);
+	// Set fatness value accordingly
+	if (*pFatness >= 2.0f)
+		*pFatness = 0.50f;
+	else if (*pFatness == 1.0f)
+		*pFatness = 0.25f;
+	else if (*pFatness <= -1.0f)
+		*pFatness = -0.25f;
 
 	// Continue rendering...
 	g_OriginalzCModel_Render(thisptr, ctx);
@@ -509,8 +509,8 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 /* Hook functions */
 void ApplyHooks()
 {
-	MessageBox(nullptr, "","",MB_OK);
-	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 6 for " DLL_TYPE_STR " --------\n");
+	//MessageBox(nullptr, "","",MB_OK);
+	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 7 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
 
@@ -562,14 +562,26 @@ void ApplyHooks()
 	else
 		debugPrint(" - Failure!\n");
 
-	debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
-	g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
-	if(g_OriginalzCModel_Render)
-		debugPrint(" - Success!\n");
-	else
-		debugPrint(" - Failure!\n");
+	// Get path to CGP mod volume
+	char exe[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], mod[MAX_PATH];
+	GetModuleFileName(NULL, exe, MAX_PATH);
+	_splitpath(exe, drive, dir, NULL, NULL);
+	strcpy_s(mod, drive);
+	strcat_s(mod, dir);
+	strcat_s(mod, "..\\Data\\Carnage_Graphics_Patch.mod");
+	_fullpath(mod, mod, MAX_PATH);
 
-	
+	// Is CGP installed?
+	if (GetFileAttributes(mod) != INVALID_FILE_ATTRIBUTES)
+	{
+		// Hook "Mdl_SetModelFatness" to fix human fingers
+		debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
+		g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
+		if (g_OriginalzCModel_Render)
+			debugPrint(" - Success!\n");
+		else
+			debugPrint(" - Failure!\n");
+	}
 #endif
 }
 
