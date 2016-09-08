@@ -16,6 +16,9 @@
 std::map<unsigned int, unsigned char> g_OriginalZENLoadSaveAsmBytes;
 std::map<unsigned int, unsigned char>& g_ActiveOriginalAsmBytes = g_OriginalZENLoadSaveAsmBytes;
 
+/* Level of Anisotropic Filtering */
+int g_MaxAnisotropy = 0;
+
 /* Whether we are in an XZEN right now */
 bool g_IsLoadingXZEN = false;
 
@@ -490,14 +493,14 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 	if(state == zRND_TSS_MAGFILTER)
 	{
 		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFG_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, 16);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
 	else if(state == zRND_TSS_MINFILTER)
 	{
 		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFN_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, 16);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}else
@@ -509,7 +512,6 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 /* Hook functions */
 void ApplyHooks()
 {
-	MessageBox(nullptr, "","",MB_OK);
 	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 7 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
@@ -582,6 +584,13 @@ void ApplyHooks()
 		else
 			debugPrint(" - Failure!\n");
 	}
+
+	// Read settings from INI
+	char ini[MAX_PATH];
+	strcpy_s(ini, drive);
+	strcat_s(ini, dir);
+	strcat_s(ini, "Gothic_Reloaded_Mod.ini");
+	g_MaxAnisotropy  = GetPrivateProfileInt("OVERRIDES", "ENGINE.zAnisotropicFiltering", 0, ini);
 #endif
 }
 
