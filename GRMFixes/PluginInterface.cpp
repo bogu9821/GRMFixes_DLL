@@ -3,12 +3,6 @@
 #include "GRMFixes.h"
 #include "VersionCheck.h"
 
-#ifdef GAME
-#define GAME_VERSION VersionCheck::EGothicVersion::GV_Gothic_1_08k_mod
-#else
-#define GAME_VERSION VersionCheck::EGothicVersion::GV_Spacer_1_41
-#endif
-
 namespace GPlugin
 {
 	class GRMFixesPlugin : public IPlugin
@@ -17,23 +11,26 @@ namespace GPlugin
 		/** Called right after the game started */
 		virtual bool OnStartup()
 		{
-#ifdef USE_PLUGIN_API
-			if(!VersionCheck::CheckExecutable(GAME_VERSION))
-				return false; // Wrong version, exit out and unload
+#ifndef USE_PLUGIN_API
+			return false;
+#endif
 
 #ifdef GAME
+			if (!VersionCheck::CheckExecutable(VersionCheck::EGothicVersion::GV_Gothic_1_08k_mod) && !VersionCheck::CheckExecutable(VersionCheck::EGothicVersion::GV_Gothic_1_08k_fps))
+				return false;
+
 			std::string cmnd = GetCommandLine();
 			std::transform(cmnd.begin(), cmnd.end(), cmnd.begin(), ::toupper);
-			
+
 			if (cmnd.find(TEXT("-GAME:GOTHIC_RELOADED_MOD.INI")) == std::string::npos)
+				return false;
+#else
+			if (!VersionCheck::CheckExecutable(VersionCheck::EGothicVersion::GV_Spacer_1_41))
 				return false;
 #endif
 
 			ApplyHooks();
 			return true;
-#else
-			return false;
-#endif
 		}
 
 		/** Called right before the game closes */
