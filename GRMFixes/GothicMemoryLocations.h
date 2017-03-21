@@ -134,6 +134,11 @@ struct GothicMemoryLocations_Game
 		static const int getValue_INT = 0x006F86E0;
 	};
 
+	struct oCMagFrontier
+	{
+		static const int pointsWorld = 0x869A30;
+	};
+
 	struct oCWorld
 	{
 		static const int enterWorld = 0x0063EAD0;
