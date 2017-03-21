@@ -22,6 +22,8 @@ int g_MaxAnisotropy = 0;
 /* Whether we are in an XZEN right now */
 bool g_IsLoadingXZEN = false;
 
+int g_vobRenderPass = 0;
+
 /* Original forms of hooked functions */
 typedef void (__thiscall* zCArchiverFactoryReadLineArg)(void*, zSTRING&, zSTRING&, struct zCBuffer*, struct zFILE*);
 zCArchiverFactoryReadLineArg g_OriginalzCArchiverFactoryReadLineArg;
@@ -41,8 +43,14 @@ oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
 zCModel_Render g_OriginalzCModel_Render;
 
-typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, zTRnd_TextureStageState, DWORD);
+typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, D3D7TEXTURESTAGESTATETYPE, DWORD);
 zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
+
+typedef int(__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3D7RENDERSTATETYPE, DWORD);
+zCRND_D3DXD3D_SetRenderState g_OriginalzCRND_D3DXD3D_SetRenderState;
+
+typedef int(__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
+zCVob_Render g_OriginalzCVob_Render;
 
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
@@ -495,28 +503,63 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 	g_OriginalzCModel_Render(thisptr, ctx);
 }
 
-int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, zTRnd_TextureStageState state, DWORD value)
+int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, D3D7TEXTURESTAGESTATETYPE state, DWORD value)
 {
-	const int D3DTFG_ANISOTROPIC = 5;
-	const int D3DTFN_ANISOTROPIC = 3;
-
-	if(state == zRND_TSS_MAGFILTER)
+	if (state == D3D7TSS_MAGFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFG_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFG_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
-	else if(state == zRND_TSS_MINFILTER)
+	else if(state == D3D7TSS_MINFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFN_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFN_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
-	}else
+	}
+	else
 	{
 		return g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, value);
 	}	
+}
+
+int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7RENDERSTATETYPE state, DWORD value)
+{
+	g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, state, value);
+
+	// Two Pass Rendering Technique (https://blogs.msdn.microsoft.com/shawnhar/2009/02/18/depth-sorting-alpha-blended-objects/)
+	if (g_vobRenderPass == 1)
+	{
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
+	}
+	else if (g_vobRenderPass == 2)
+	{
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZWRITEENABLE, false);
+	}
+
+	return S_OK;
+}
+
+void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
+{
+	g_vobRenderPass = 1;
+	g_OriginalzCVob_Render(thisptr, ctx);
+	g_vobRenderPass = 2;
+	g_OriginalzCVob_Render(thisptr, ctx);
+	g_vobRenderPass = 0;
 }
 
 /* Hook functions */
@@ -545,6 +588,20 @@ void ApplyHooks()
 	else
 		debugPrint(" - Failure!\n");
 
+	debugPrint("Applying hook to 'zCRND_D3D::XD3D_SetRenderState'\n");
+	g_OriginalzCRND_D3DXD3D_SetRenderState = (zCRND_D3DXD3D_SetRenderState)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::XD3D_SetRenderState, (byte*)HookedzCRND_D3DXD3D_SetRenderState);
+	if(g_OriginalzCRND_D3DXD3D_SetRenderState)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCVob::Render'\n");
+	g_OriginalzCVob_Render = (zCVob_Render)DetourFunction((byte*)GothicMemoryLocations::zCVob::Render, (byte*)HookedzCVob_Render);
+	if (g_OriginalzCVob_Render)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
 	// Only hook the write-ones in the spacer. Savegames shouldn't have that flag as they don't contain the worldmesh
 #ifndef GAME
 
@@ -566,7 +623,7 @@ void ApplyHooks()
 	else
 		debugPrint(" - Failure!\n");
 #else
-	// Hook "EnterWorld" to fix climbing-angle
+
 	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
 	if(g_OriginaloCAniCtrl_HumanSetScriptValues)
@@ -586,8 +643,7 @@ void ApplyHooks()
 	// Is CGP installed?
 	if (GetFileAttributes(mod) != INVALID_FILE_ATTRIBUTES)
 	{
-		// Hook "Mdl_SetModelFatness" to fix human fingers
-		debugPrint("Applying hook to 'oCNpc::SetFatness'\n");
+		debugPrint("Applying hook to 'zCModel::Render'\n");
 		g_OriginalzCModel_Render = (zCModel_Render)DetourFunction((byte*)GothicMemoryLocations::zCModel::Render, (byte*)HookedzCModel_Render);
 		if (g_OriginalzCModel_Render)
 			debugPrint(" - Success!\n");

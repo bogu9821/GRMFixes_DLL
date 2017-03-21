@@ -43,6 +43,9 @@
     <ClInclude Include="mem.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="d3d7types.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PluginInterface.cpp">

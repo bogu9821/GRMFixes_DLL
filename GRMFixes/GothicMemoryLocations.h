@@ -164,6 +164,12 @@ struct GothicMemoryLocations_Game
 	struct zCRND_D3D
 	{
 		static const int SetTextureStageState = 0x00718270;
+		static const int XD3D_SetRenderState = 0x007185C0;
+	};
+
+	struct zCVob
+	{
+		static const int Render = 0x005D6090;
 	};
 };
 
