@@ -565,7 +565,7 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 /* Hook functions */
 void ApplyHooks()
 {
-	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 7 for " DLL_TYPE_STR " --------\n");
+	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 8 for " DLL_TYPE_STR " --------\n");
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
 
@@ -580,6 +580,28 @@ void ApplyHooks()
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
+
+	// Only hook the write-ones in the spacer. Savegames shouldn't have that flag as they don't contain the worldmesh
+#ifndef GAME
+
+	debugPrint("Applying hook to 'zCBspTree::SaveBIN'\n");
+	g_OriginalzCBspTreeSaveBIN = (zCBspTreeSaveBIN)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::SaveBIN, (byte*)HookedzCBspTreeSaveBin);
+	if (g_OriginalzCBspTreeSaveBIN)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCArchiverFactory::WriteLine'\n");
+
+	// Just overwrite the zSTRING-Version and proxy to the char* overload
+	DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::WriteLine, (byte*)HookedzCArchiverFactoryWriteLine);
+	g_OriginalzCArchiverFactoryWriteLine_char = (zCArchiverFactoryWriteLine)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::WriteLine_char, (byte*)HookedzCArchiverFactoryWriteLine_char);
+
+	if (g_OriginalzCArchiverFactoryWriteLine_char)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+#else
 
 	debugPrint("Applying hook to 'zCRND_D3D::SetTextureStageState'\n");
 	g_OriginalzCRND_D3DSetTextureStageState =  (zCRND_D3DSetTextureStageState)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::SetTextureStageState, (byte*)HookedzCRND_D3DSetTextureStageState);
@@ -601,28 +623,6 @@ void ApplyHooks()
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
-
-	// Only hook the write-ones in the spacer. Savegames shouldn't have that flag as they don't contain the worldmesh
-#ifndef GAME
-
-	debugPrint("Applying hook to 'zCBspTree::SaveBIN'\n");
-	g_OriginalzCBspTreeSaveBIN =  (zCBspTreeSaveBIN)DetourFunction((byte*)GothicMemoryLocations::zCBspTree::SaveBIN, (byte*)HookedzCBspTreeSaveBin);
-	if(g_OriginalzCBspTreeSaveBIN)
-		debugPrint(" - Success!\n");
-	else
-		debugPrint(" - Failure!\n");
-
-	debugPrint("Applying hook to 'zCArchiverFactory::WriteLine'\n");
-
-	// Just overwrite the zSTRING-Version and proxy to the char* overload
-	DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::WriteLine, (byte*)HookedzCArchiverFactoryWriteLine);
-	g_OriginalzCArchiverFactoryWriteLine_char = (zCArchiverFactoryWriteLine)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::WriteLine_char, (byte*)HookedzCArchiverFactoryWriteLine_char);
-	
-	if(g_OriginalzCArchiverFactoryWriteLine_char)
-		debugPrint(" - Success!\n");
-	else
-		debugPrint(" - Failure!\n");
-#else
 
 	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
