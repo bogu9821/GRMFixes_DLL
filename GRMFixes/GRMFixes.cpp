@@ -23,6 +23,7 @@ int g_MaxAnisotropy = 0;
 bool g_IsLoadingXZEN = false;
 
 int g_vobRenderPass = 0;
+bool g_twoPassRequired = 0;
 
 /* Original forms of hooked functions */
 typedef void (__thiscall* zCArchiverFactoryReadLineArg)(void*, zSTRING&, zSTRING&, struct zCBuffer*, struct zFILE*);
@@ -48,6 +49,9 @@ zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
 
 typedef int(__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3D7RENDERSTATETYPE, DWORD);
 zCRND_D3DXD3D_SetRenderState g_OriginalzCRND_D3DXD3D_SetRenderState;
+
+typedef int(__thiscall* zCTexture_HasAlpha)(void*);
+zCTexture_HasAlpha g_OriginalzCTexture_HasAlpha;
 
 typedef int(__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
 zCVob_Render g_OriginalzCVob_Render;
@@ -537,6 +541,7 @@ int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, false);
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
+		g_twoPassRequired = true;
 	}
 	else if (g_vobRenderPass == 2)
 	{
@@ -553,12 +558,24 @@ int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7
 	return S_OK;
 }
 
+int __fastcall HookedzCTexture_HasAlpha(void* thisptr, void* edx)
+{
+	if (g_vobRenderPass > 0)
+		return 1;
+	else
+		return g_OriginalzCTexture_HasAlpha(thisptr);
+}
+
 void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 {
 	g_vobRenderPass = 1;
 	g_OriginalzCVob_Render(thisptr, ctx);
-	g_vobRenderPass = 2;
-	g_OriginalzCVob_Render(thisptr, ctx);
+	if (g_twoPassRequired)
+	{
+		g_vobRenderPass = 2;
+		g_OriginalzCVob_Render(thisptr, ctx);
+	}
+	g_twoPassRequired = false;
 	g_vobRenderPass = 0;
 }
 
@@ -613,6 +630,13 @@ void ApplyHooks()
 	debugPrint("Applying hook to 'zCRND_D3D::XD3D_SetRenderState'\n");
 	g_OriginalzCRND_D3DXD3D_SetRenderState = (zCRND_D3DXD3D_SetRenderState)DetourFunction((byte*)GothicMemoryLocations::zCRND_D3D::XD3D_SetRenderState, (byte*)HookedzCRND_D3DXD3D_SetRenderState);
 	if(g_OriginalzCRND_D3DXD3D_SetRenderState)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCTexture::HasAlpha'\n");
+	g_OriginalzCTexture_HasAlpha = (zCTexture_HasAlpha)DetourFunction((byte*)GothicMemoryLocations::zCTexture::HasAlpha, (byte*)HookedzCTexture_HasAlpha);
+	if (g_OriginalzCTexture_HasAlpha)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
