@@ -570,18 +570,26 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 	g_vobRenderPass = 1;
 	g_OriginalzCVob_Render(thisptr, ctx);
 
-	zCVob* vob = (zCVob*)thisptr;
-	zCVisual* visual = *(zCVisual**)((char*)vob + GothicMemoryLocations::zCVob::Offset_Visual);
-
-	if (visual)
+	if (g_vobMapTwoPass.empty())
 	{
-		zSTRING* zstr = (zSTRING*)((char*)visual + GothicMemoryLocations::zCObject::Offset_Name);
-		if (zstr)
+		g_vobRenderPass = 2;
+		g_OriginalzCVob_Render(thisptr, ctx);
+	}
+	else
+	{
+		zCVob* vob = (zCVob*)thisptr;
+		zCVisual* visual = *(zCVisual**)((char*)vob + GothicMemoryLocations::zCVob::Offset_Visual);
+
+		if (visual)
 		{
-			if (g_vobMapTwoPass.find(zstr->ToChar()) != g_vobMapTwoPass.end())
+			zSTRING* zstr = (zSTRING*)((char*)visual + GothicMemoryLocations::zCObject::Offset_Name);
+			if (zstr)
 			{
-				g_vobRenderPass = 2;
-				g_OriginalzCVob_Render(thisptr, ctx);
+				if (g_vobMapTwoPass.find(zstr->ToChar()) != g_vobMapTwoPass.end())
+				{
+					g_vobRenderPass = 2;
+					g_OriginalzCVob_Render(thisptr, ctx);
+				}
 			}
 		}
 	}
@@ -697,7 +705,21 @@ void ApplyHooks()
 	AdjustMagicFrontier((float *)pointsWorld, sizeof(pointsWorld), GothicMemoryLocations::oCMagFrontier::pointsWorld);
 	debugPrint("Done!\n");
 
-	g_vobMapTwoPass["OW_LOB_TREE_V10.3DS"] = 1;
+	// Read alpha VOB names from txt
+	char alpha[MAX_PATH];
+	strcpy_s(alpha, drive);
+	strcat_s(alpha, dir);
+	strcat_s(alpha, "AlphaTwoPass.txt");
+
+	debugPrint("Reading alpha VOB list...\n");
+	std::ifstream file(alpha);
+	std::string line;
+	while (std::getline(file, line))
+		g_vobMapTwoPass[line] = 1;
+	if (g_vobMapTwoPass.empty())
+		debugPrint("File not found or empty, two pass rendering will be applied to all VOBs!\n");
+	else
+		debugPrint("Done!\n");
 #endif
 }
 
