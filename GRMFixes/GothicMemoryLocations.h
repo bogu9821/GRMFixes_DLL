@@ -50,6 +50,8 @@ struct zTPlane
 	float3 Normal;
 };
 
+class zCVob;
+class zCVisual;
 class zCMaterial;
 class zCLightMap;
 struct zCPolygon
@@ -175,6 +177,12 @@ struct GothicMemoryLocations_Game
 	struct zCVob
 	{
 		static const int Render = 0x005D6090;
+		static const int Offset_Visual = 0xB8;
+	};
+
+	struct zCObject
+	{
+		static const int Offset_Name = 0x10;
 	};
 };
 

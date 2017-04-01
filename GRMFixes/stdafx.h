@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "detours.h"
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <d3d9.h>
 #include <d3dx9math.h>

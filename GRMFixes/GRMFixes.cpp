@@ -22,8 +22,8 @@ int g_MaxAnisotropy = 0;
 /* Whether we are in an XZEN right now */
 bool g_IsLoadingXZEN = false;
 
+std::unordered_map<std::string, int> g_vobMapTwoPass;
 int g_vobRenderPass = 0;
-bool g_twoPassRequired = 0;
 
 /* Original forms of hooked functions */
 typedef void (__thiscall* zCArchiverFactoryReadLineArg)(void*, zSTRING&, zSTRING&, struct zCBuffer*, struct zFILE*);
@@ -541,7 +541,6 @@ int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, false);
 		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
-		g_twoPassRequired = true;
 	}
 	else if (g_vobRenderPass == 2)
 	{
@@ -570,12 +569,23 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 {
 	g_vobRenderPass = 1;
 	g_OriginalzCVob_Render(thisptr, ctx);
-	if (g_twoPassRequired)
+
+	zCVob* vob = (zCVob*)thisptr;
+	zCVisual* visual = *(zCVisual**)((char*)vob + GothicMemoryLocations::zCVob::Offset_Visual);
+
+	if (visual)
 	{
-		g_vobRenderPass = 2;
-		g_OriginalzCVob_Render(thisptr, ctx);
+		zSTRING* zstr = (zSTRING*)((char*)visual + GothicMemoryLocations::zCObject::Offset_Name);
+		if (zstr)
+		{
+			if (g_vobMapTwoPass.find(zstr->ToChar()) != g_vobMapTwoPass.end())
+			{
+				g_vobRenderPass = 2;
+				g_OriginalzCVob_Render(thisptr, ctx);
+			}
+		}
 	}
-	g_twoPassRequired = false;
+
 	g_vobRenderPass = 0;
 }
 
@@ -686,6 +696,8 @@ void ApplyHooks()
 	debugPrint("Adjusting magic frontier...\n");
 	AdjustMagicFrontier((float *)pointsWorld, sizeof(pointsWorld), GothicMemoryLocations::oCMagFrontier::pointsWorld);
 	debugPrint("Done!\n");
+
+	g_vobMapTwoPass["OW_LOB_TREE_V10.3DS"] = 1;
 #endif
 }
 
