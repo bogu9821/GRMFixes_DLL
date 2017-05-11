@@ -392,8 +392,6 @@ void __fastcall HookedzCArchiverFactoryWriteLine(void* thisptr, void* unknwn, co
 	HookedzCArchiverFactoryWriteLine_char(thisptr, unknwn, line.ToChar(), buffer, file);	
 }
 
-
-
 /* Check for properties on top of a ZEN-File */
 void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* unknwn, zSTRING& line, zSTRING& arg, struct zCBuffer* buffer, struct zFILE* file)
 {
@@ -462,6 +460,8 @@ void __fastcall HookedzCBspTreeSaveBin(void* thisptr, void* edx, class zCFileBIN
 	// Reset this for the next time
 	g_OriginalZENLoadSaveAsmBytes.clear();
 }
+
+#ifdef GAME
 
 /**
  * Fix the climbing-angle
@@ -596,6 +596,8 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 
 	g_vobRenderPass = 0;
 }
+
+#endif
 
 /* Hook functions */
 void ApplyHooks()
