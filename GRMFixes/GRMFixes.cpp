@@ -44,10 +44,10 @@ oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
 zCModel_Render g_OriginalzCModel_Render;
 
-typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, D3D7TEXTURESTAGESTATETYPE, DWORD);
+typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, D3DTEXTURESTAGESTATETYPE, DWORD);
 zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
 
-typedef int(__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3D7RENDERSTATETYPE, DWORD);
+typedef int(__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3DRENDERSTATETYPE, DWORD);
 zCRND_D3DXD3D_SetRenderState g_OriginalzCRND_D3DXD3D_SetRenderState;
 
 typedef int(__thiscall* zCTexture_HasAlpha)(void*);
@@ -366,7 +366,7 @@ void AdjustMagicFrontier(const float* bytes, int numBytes, unsigned int addr)
 }
 
 /* Leave a note in the ZEN-File so we know it has been modified data */
-void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* unknwn, const char* line, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* edx, const char* line, struct zCBuffer* buffer, struct zFILE* file)
 {
 	std::string ln = line;
 
@@ -387,13 +387,13 @@ void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* unknw
 }
 
 /* Just proxy this to the char* version */
-void __fastcall HookedzCArchiverFactoryWriteLine(void* thisptr, void* unknwn, const zSTRING& line, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryWriteLine(void* thisptr, void* edx, const zSTRING& line, struct zCBuffer* buffer, struct zFILE* file)
 {
-	HookedzCArchiverFactoryWriteLine_char(thisptr, unknwn, line.ToChar(), buffer, file);	
+	HookedzCArchiverFactoryWriteLine_char(thisptr, edx, line.ToChar(), buffer, file);	
 }
 
 /* Check for properties on top of a ZEN-File */
-void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* unknwn, zSTRING& line, zSTRING& arg, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* edx, zSTRING& line, zSTRING& arg, struct zCBuffer* buffer, struct zFILE* file)
 {
 	// Call original function
 	g_OriginalzCArchiverFactoryReadLineArg(thisptr, line, arg, buffer, file);
@@ -507,19 +507,19 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 	g_OriginalzCModel_Render(thisptr, ctx);
 }
 
-int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, D3D7TEXTURESTAGESTATETYPE state, DWORD value)
+int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, D3DTEXTURESTAGESTATETYPE state, DWORD value)
 {
-	if (state == D3D7TSS_MAGFILTER)
+	if (state == D3DTSS_MAGFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFG_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFG_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3DTSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
-	else if(state == D3D7TSS_MINFILTER)
+	else if(state == D3DTSS_MINFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFN_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFN_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3DTSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
@@ -529,29 +529,29 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 	}	
 }
 
-int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7RENDERSTATETYPE state, DWORD value)
+int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3DRENDERSTATETYPE state, DWORD value)
 {
 	g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, state, value);
 
 	// Two Pass Rendering Technique (https://blogs.msdn.microsoft.com/shawnhar/2009/02/18/depth-sorting-alpha-blended-objects/)
 	if (g_vobRenderPass == 1)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, false);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHABLENDENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZENABLE, true);
 	}
 	else if (g_vobRenderPass == 2)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZWRITEENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHABLENDENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZWRITEENABLE, false);
 	}
 
 	return S_OK;
@@ -603,9 +603,9 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 void ApplyHooks()
 {
 	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 8 for " DLL_TYPE_STR " --------\n");
+
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
-
 	if(g_OriginalzCArchiverFactoryReadLineArg)
 		debugPrint(" - Success!\n");
 	else

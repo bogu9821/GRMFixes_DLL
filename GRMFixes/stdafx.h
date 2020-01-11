@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <string>
 #include <fstream>
-#include <d3d9.h>
-#include <d3dx9math.h>
-#include "d3d7types.h"
+#include "d3d7.h"
 
 #pragma comment(lib, "winmm.lib")
