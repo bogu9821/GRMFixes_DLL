@@ -3,6 +3,7 @@
 #include "GothicMemoryLocations.h"
 #include "GRMFixes.h"
 #include "scriptAPI.h"
+#include <Windows.h>
 
 #define debugPrint printf
 
@@ -55,6 +56,15 @@ zCTexture_HasAlpha g_OriginalzCTexture_HasAlpha;
 
 typedef int(__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
 zCVob_Render g_OriginalzCVob_Render;
+
+typedef void(__thiscall* zCMusicSys_DirectMusicStop)(void*);
+zCMusicSys_DirectMusicStop g_OriginalzCMusicSys_DirectMusicStop;
+
+typedef void(__thiscall* zCMusicSys_DirectMusicPlayThemeByScript)(void*, const zSTRING&, int, int*);
+zCMusicSys_DirectMusicPlayThemeByScript g_OriginalzCMusicSys_DirectMusicPlayThemeByScript;
+
+typedef void(__thiscall* zCMusicSys_DirectMusicPlayTheme)(void*, struct zCMusicTheme*, const float&, const zTMus_TransType&, const zTMus_TransSubType&);
+zCMusicSys_DirectMusicPlayTheme g_OriginalzCMusicSys_DirectMusicPlayTheme;
 
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
@@ -597,6 +607,60 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 	g_vobRenderPass = 0;
 }
 
+void __fastcall HookedzCMusicSys_DirectMusicStop(void* thisptr, void* edx)
+{
+	g_OriginalzCMusicSys_DirectMusicStop(thisptr);
+}
+
+void __fastcall HookedzCMusicSys_DirectMusicPlayThemeByScript(void* thisptr, void* edx, const zSTRING& id, const int manipulate, zBOOL* done)
+{
+	debugPrint("Playing theme %s..\n", id.ToChar());
+	g_OriginalzCMusicSys_DirectMusicPlayThemeByScript(thisptr, id, manipulate, done);
+}
+
+bool file_exist(const char* fileName)
+{
+	std::ifstream infile(fileName);
+	return infile.good();
+}
+
+std::string currentTheme = std::string("");
+
+void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, struct zCMusicTheme* theme, const float& volume, const zTMus_TransType& tr, const zTMus_TransSubType& trSub)
+{
+	debugPrint("Playing file %s..\n", theme->fileName.ToChar());
+
+	std::string nextTheme(theme->fileName.ToChar());
+	nextTheme = nextTheme.substr(0, nextTheme.find_last_of("."));
+
+	if (currentTheme != nextTheme)
+	{
+		char exe[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], wave[MAX_PATH];
+		GetModuleFileName(NULL, exe, MAX_PATH);
+		_splitpath(exe, drive, dir, NULL, NULL);
+		strcpy_s(wave, drive);
+		strcat_s(wave, dir);
+		strcat_s(wave, "..\\_work\\DATA\\Music\\wav\\");
+		strcat_s(wave, nextTheme.c_str());
+		strcat_s(wave, ".wav");
+		_fullpath(wave, wave, MAX_PATH);
+
+		PlaySound(NULL, NULL, SND_ASYNC);
+		HookedzCMusicSys_DirectMusicStop(thisptr, edx);
+
+		if (file_exist(wave))
+		{
+			PlaySound(wave, NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+		}
+		else
+		{
+			g_OriginalzCMusicSys_DirectMusicPlayTheme(thisptr, theme, volume, tr, trSub);
+		}
+
+		currentTheme = nextTheme;
+	}
+}
+
 #endif
 
 /* Hook functions */
@@ -671,6 +735,27 @@ void ApplyHooks()
 	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
 	if(g_OriginaloCAniCtrl_HumanSetScriptValues)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::Stop'\n");
+	g_OriginalzCMusicSys_DirectMusicStop = (zCMusicSys_DirectMusicStop)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::Stop, (byte*)HookedzCMusicSys_DirectMusicStop);
+	if (g_OriginalzCMusicSys_DirectMusicStop)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::PlayThemeByScript'\n");
+	g_OriginalzCMusicSys_DirectMusicPlayThemeByScript = (zCMusicSys_DirectMusicPlayThemeByScript)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::PlayThemeByScript, (byte*)HookedzCMusicSys_DirectMusicPlayThemeByScript);
+	if (g_OriginalzCMusicSys_DirectMusicPlayThemeByScript)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::PlayTheme'\n");
+	g_OriginalzCMusicSys_DirectMusicPlayTheme = (zCMusicSys_DirectMusicPlayTheme)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::PlayTheme, (byte*)HookedzCMusicSys_DirectMusicPlayTheme);
+	if (g_OriginalzCMusicSys_DirectMusicPlayTheme)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
