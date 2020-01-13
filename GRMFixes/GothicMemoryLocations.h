@@ -118,6 +118,14 @@ struct GothicMemoryLocations_Game
 		static const int Offset_Name = 0x10;
 	};
 
+	struct zCSndSys_MSS
+	{
+		static const int Constructor = 0x004DD530;
+		static const int LoadSoundFX = 0x004E0370;
+		static const int PlaySound = 0x004E3220;
+		static const int StopSound = 0x004E4610;
+	};
+
 	struct zCMusicSys_DirectMusic
 	{
 		static const int Stop = 0x004DCBF0;

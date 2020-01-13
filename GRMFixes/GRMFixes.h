@@ -127,3 +127,21 @@ struct zCMusicTheme
 	zBYTE dScriptEnd;
 	zSTRING name;
 };
+
+struct zCSoundFX
+{
+};
+
+typedef int zTSoundHandle;
+
+const int zSND_FREQ_DEFAULT = -1;
+const float zSND_PAN_DEFAULT = -2;
+const float zSND_PAN_LEFT = -1.0F;
+const float zSND_PAN_CENTER = 0.0F;
+const float zSND_PAN_RIGHT = 1.0F;
+const float zSND_PAN_SURROUND = 100.0F;
+const float zSND_VOL_DEFAULT = -1.0F;
+const float zSND_RADIUS_DEFAULT = -1.0F;
+const float zSND_PITCH_DEFAULT = -999999.0F;
+const int zSND_SLOT_NONE = 0;
+const int zSND_SLOT_MAX = 8;
