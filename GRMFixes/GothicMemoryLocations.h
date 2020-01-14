@@ -118,6 +118,11 @@ struct GothicMemoryLocations_Game
 		static const int Offset_Name = 0x10;
 	};
 
+	struct zCSndFX_MSS
+	{
+		static const int SetLooping = 0x004E8380;
+	};
+
 	struct zCSndSys_MSS
 	{
 		static const int Constructor = 0x004DD530;

@@ -56,6 +56,9 @@ zCTexture_HasAlpha g_OriginalzCTexture_HasAlpha;
 typedef int (__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
 zCVob_Render g_OriginalzCVob_Render;
 
+typedef void(__thiscall* zCSndFX_MSSSetLooping)(void*, zBOOL);
+zCSndFX_MSSSetLooping g_OriginalzCSndFX_MSSSetLooping;
+
 typedef DWORD(__thiscall* zCSndSys_MSSConstructor)(void*);
 zCSndSys_MSSConstructor g_OriginalzCSndSys_MSSConstructor;
 
@@ -620,6 +623,11 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 
 void* g_zCSndSys_MSS = NULL;
 
+void __fastcall HookedzCSndFX_MSSSetLooping(void* thisptr, void* edx, zBOOL loop)
+{
+	g_OriginalzCSndFX_MSSSetLooping(thisptr, loop);
+}
+
 DWORD __fastcall HookedzCSndSys_MSSConstructor(void* thisptr, void* edx)
 {
 	// TODO: Singleton?
@@ -691,6 +699,7 @@ void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, 
 			if (file_exist(wave))
 			{
 				zCSoundFX* soundFx = g_OriginalzCSndSys_MSSLoadSoundFX(g_zCSndSys_MSS, nextTheme.c_str());
+				g_OriginalzCSndFX_MSSSetLooping(soundFx, TRUE);
 				g_currentThemeHandle = g_OriginalzCSndSys_MSSPlaySound(g_zCSndSys_MSS, soundFx, zSND_SLOT_NONE, zSND_FREQ_DEFAULT, zSND_VOL_DEFAULT, zSND_PAN_CENTER);
 			}
 			else
@@ -786,6 +795,13 @@ void ApplyHooks()
 	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
 	if(g_OriginaloCAniCtrl_HumanSetScriptValues)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndFX_MSS::SetLooping'\n");
+	g_OriginalzCSndFX_MSSSetLooping = (zCSndFX_MSSSetLooping)DetourFunction((byte*)GothicMemoryLocations::zCSndFX_MSS::SetLooping, (byte*)HookedzCSndFX_MSSSetLooping);
+	if (g_OriginalzCSndFX_MSSSetLooping)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");
