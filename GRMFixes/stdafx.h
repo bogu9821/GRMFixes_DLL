@@ -14,5 +14,9 @@
 #include <string>
 #include <fstream>
 #include "d3d7.h"
+#include <thread>
+#include <mutex>
+#include <math.h>
+#include <cassert>
 
 #pragma comment(lib, "winmm.lib")

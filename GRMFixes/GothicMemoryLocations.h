@@ -129,10 +129,12 @@ struct GothicMemoryLocations_Game
 		static const int LoadSoundFX = 0x004E0370;
 		static const int PlaySound = 0x004E3220;
 		static const int StopSound = 0x004E4610;
+		static const int UpdateSoundProps = 0x004E5A20;
 	};
 
 	struct zCMusicSys_DirectMusic
 	{
+		static const int SetVolume = 0x004DCC80;
 		static const int Stop = 0x004DCBF0;
 		static const int PlayThemeByScript = 0x004DB850;
 		static const int PlayTheme = 0x004DC4E0;

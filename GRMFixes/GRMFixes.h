@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stdafx.h"
 #include "GothicMemoryLocations.h"
 
 // Whether this acts as a plugin or not
@@ -145,3 +146,18 @@ const float zSND_RADIUS_DEFAULT = -1.0F;
 const float zSND_PITCH_DEFAULT = -999999.0F;
 const int zSND_SLOT_NONE = 0;
 const int zSND_SLOT_MAX = 8;
+
+enum FadeMode
+{
+	Out = 0,
+	In = 1,
+};
+
+struct Transition
+{
+	std::string fileName;
+	zTSoundHandle handle;
+	FadeMode mode;
+	int duration;
+	float volume;
+};
