@@ -74,6 +74,9 @@ zCSndSys_MSSStopSound g_OriginalzCSndSys_MSSStopSound;
 typedef void(__thiscall* zCSndSys_MSSUpdateSoundProps)(void*, const zTSoundHandle&, int, float, float);
 zCSndSys_MSSUpdateSoundProps g_OriginalzCSndSys_MSSUpdateSoundProps;
 
+typedef DWORD(__thiscall* zCMusicSys_DirectMusicConstructor)(void*);
+zCMusicSys_DirectMusicConstructor g_OriginalzCMusicSys_DirectMusicConstructor;
+
 typedef void(__thiscall* zCMusicSys_DirectMusicSetVolume)(void*, float);
 zCMusicSys_DirectMusicSetVolume g_OriginalzCMusicSys_DirectMusicSetVolume;
 
@@ -628,6 +631,7 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 }
 
 void* g_zCSndSys_MSS = NULL;
+void* g_zCMusicSys_DirectMusic = NULL;
 float g_MusicVolume = 0.8F;
 std::string g_currentTheme = std::string("");
 zTSoundHandle g_currentThemeHandle = NULL;
@@ -642,7 +646,7 @@ bool file_exist(const char* fileName)
 	return infile.good();
 }
 
-void AddTransition(std::string fileName, zTSoundHandle handle, FadeMode mode, int duration)
+void AddTransition(std::string fileName, TransitionType type, zTSoundHandle handle, FadeMode mode, int duration)
 {
 	g_transitionsMutex.lock();
 
@@ -657,6 +661,7 @@ void AddTransition(std::string fileName, zTSoundHandle handle, FadeMode mode, in
 			vol = g_MusicVolume;
 
 		struct Transition trans = {
+			type,
 			fileName,
 			handle,
 			mode,
@@ -693,7 +698,14 @@ void ProcessTransitions()
 			else if (it->second.mode == FadeMode::Out)
 				it->second.volume = std::max(it->second.volume - delta, 0.0F);
 
-			g_OriginalzCSndSys_MSSUpdateSoundProps(g_zCSndSys_MSS, it->second.handle, zSND_FREQ_DEFAULT, it->second.volume, zSND_PAN_CENTER);
+			if (it->second.type == TransitionType::MilesSoundSystem)
+			{
+				g_OriginalzCSndSys_MSSUpdateSoundProps(g_zCSndSys_MSS, it->second.handle, zSND_FREQ_DEFAULT, it->second.volume, zSND_PAN_CENTER);
+			}
+			else if (it->second.type == TransitionType::DirectMusic)
+			{
+				g_OriginalzCMusicSys_DirectMusicSetVolume(g_zCMusicSys_DirectMusic, it->second.volume);
+			}
 
 			if (it->second.duration == 0
 				|| (it->second.mode == FadeMode::In && it->second.volume == g_MusicVolume)
@@ -701,8 +713,17 @@ void ProcessTransitions()
 			{
 				if (it->second.mode == FadeMode::Out)
 				{
-					debugPrint("Stopped %s!\n", it->second.fileName.c_str());
-					g_OriginalzCSndSys_MSSStopSound(g_zCSndSys_MSS, it->second.handle);
+					if (it->second.type == TransitionType::MilesSoundSystem)
+					{
+						debugPrint("Stopped MSS!\n");
+						g_OriginalzCSndSys_MSSStopSound(g_zCSndSys_MSS, it->second.handle);
+					}
+					else if (it->second.type == TransitionType::DirectMusic)
+					{
+						debugPrint("Stopped DirectMusic!\n");
+						g_OriginalzCMusicSys_DirectMusicStop(g_zCMusicSys_DirectMusic);
+						g_OriginalzCMusicSys_DirectMusicSetVolume(g_zCMusicSys_DirectMusic, g_MusicVolume);
+					}
 
 					g_themeHandlesMutex.lock();
 					g_themeHandles.erase(it->first);
@@ -752,6 +773,14 @@ void __fastcall HookedzCSndSys_MSSUpdateSoundProps(void* thisptr, void* edx, con
 	g_OriginalzCSndSys_MSSUpdateSoundProps(thisptr, sfxHandle, freq, vol, pan);
 }
 
+DWORD __fastcall HookedzCMusicSys_DirectMusicConstructor(void* thisptr, void* edx)
+{
+	assert(std::is_same(g_zCMusicSys_DirectMusic, NULL));
+	DWORD result = g_OriginalzCMusicSys_DirectMusicConstructor(thisptr);
+	g_zCMusicSys_DirectMusic = (void*)result;
+	return result;
+}
+
 void __fastcall HookedzCMusicSys_DirectMusicSetVolume(void* thisptr, void* edx, float vol)
 {
 	g_MusicVolume = vol;
@@ -779,12 +808,9 @@ void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, 
 {
 	std::string nextTheme(theme->fileName.ToChar());
 	nextTheme = nextTheme.substr(0, nextTheme.find_last_of("."));
-	nextTheme.append(".wav");
 
 	if (g_currentTheme != nextTheme && g_zCSndSys_MSS != NULL)
 	{
-		debugPrint("Playing %s..\n", nextTheme.c_str());
-
 		char exe[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], wave[MAX_PATH];
 		GetModuleFileName(NULL, exe, MAX_PATH);
 		_splitpath(exe, drive, dir, NULL, NULL);
@@ -792,6 +818,7 @@ void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, 
 		strcat_s(wave, dir);
 		strcat_s(wave, "..\\_work\\DATA\\Sound\\SFX\\");
 		strcat_s(wave, nextTheme.c_str());
+		strcat_s(wave, ".wav");
 		_fullpath(wave, wave, MAX_PATH);
 
 		int fadeOut = 3000;
@@ -812,18 +839,24 @@ void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, 
 
 		if (g_currentThemeHandle != NULL)
 		{
-			std::thread(&AddTransition, g_currentTheme, g_currentThemeHandle, FadeMode::Out, fadeOut).detach();
+			std::thread(&AddTransition, g_currentTheme, TransitionType::MilesSoundSystem, g_currentThemeHandle, FadeMode::Out, fadeOut).detach();
+		}
+		else
+		{
+			std::thread(&AddTransition, "", TransitionType::DirectMusic, NULL, FadeMode::Out, fadeOut).detach();
 		}
 
 		if (file_exist(wave))
 		{
+			debugPrint("Playing %s.wav..\n", nextTheme.c_str());
+
 			g_themeHandlesMutex.lock();
 
 			std::map<std::string, zTSoundHandle>::iterator it = g_themeHandles.find(nextTheme);
 
 			if (it == g_themeHandles.end())
 			{
-				zCSoundFX* soundFx = g_OriginalzCSndSys_MSSLoadSoundFX(g_zCSndSys_MSS, nextTheme.c_str());
+				zCSoundFX* soundFx = g_OriginalzCSndSys_MSSLoadSoundFX(g_zCSndSys_MSS, (nextTheme + ".wav").c_str());
 				g_OriginalzCSndFX_MSSSetLooping(soundFx, TRUE);
 				g_currentThemeHandle = g_OriginalzCSndSys_MSSPlaySound(g_zCSndSys_MSS, soundFx, zSND_SLOT_NONE, zSND_FREQ_DEFAULT, 0.0F, zSND_PAN_CENTER);
 				g_themeHandles.insert(g_themeHandles.end(), std::pair<std::string, zTSoundHandle>(nextTheme, g_currentThemeHandle));
@@ -835,11 +868,14 @@ void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, 
 
 			g_themeHandlesMutex.unlock();
 
-			std::thread(&AddTransition, nextTheme, g_currentThemeHandle, FadeMode::In, fadeIn).detach();
+			std::thread(&AddTransition, nextTheme, TransitionType::MilesSoundSystem, g_currentThemeHandle, FadeMode::In, fadeIn).detach();
 		}
 		else
 		{
-			debugPrint("File not found!\n");
+			debugPrint("Playing %s.sgt..\n", nextTheme.c_str());
+			g_currentThemeHandle = NULL;
+			g_OriginalzCMusicSys_DirectMusicPlayTheme(thisptr, theme, volume, tr, trSub);
+			std::thread(&AddTransition, "", TransitionType::DirectMusic, NULL, FadeMode::In, fadeIn).detach();
 		}
 
 		g_currentTheme = nextTheme;
@@ -963,6 +999,13 @@ void ApplyHooks()
 	debugPrint("Applying hook to 'zCSndSys_MSS::UpdateSoundProps'\n");
 	g_OriginalzCSndSys_MSSUpdateSoundProps = (zCSndSys_MSSUpdateSoundProps)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::UpdateSoundProps, (byte*)HookedzCSndSys_MSSUpdateSoundProps);
 	if (g_OriginalzCSndSys_MSSUpdateSoundProps)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::Constructor'\n");
+	g_OriginalzCMusicSys_DirectMusicConstructor = (zCMusicSys_DirectMusicConstructor)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::Constructor, (byte*)HookedzCMusicSys_DirectMusicConstructor);
+	if (g_OriginalzCMusicSys_DirectMusicConstructor)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");

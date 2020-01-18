@@ -153,8 +153,15 @@ enum FadeMode
 	In = 1,
 };
 
+enum TransitionType
+{
+	MilesSoundSystem = 0,
+	DirectMusic = 1,
+};
+
 struct Transition
 {
+	TransitionType type;
 	std::string fileName;
 	zTSoundHandle handle;
 	FadeMode mode;

@@ -134,6 +134,7 @@ struct GothicMemoryLocations_Game
 
 	struct zCMusicSys_DirectMusic
 	{
+		static const int Constructor = 0x004DA270;
 		static const int SetVolume = 0x004DCC80;
 		static const int Stop = 0x004DCBF0;
 		static const int PlayThemeByScript = 0x004DB850;
