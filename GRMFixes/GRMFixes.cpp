@@ -44,7 +44,7 @@ oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
 zCModel_Render g_OriginalzCModel_Render;
 
-typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, D3DTEXTURESTAGESTATETYPE, DWORD);
+typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, zTRnd_TextureStageState, DWORD);
 zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
 
 typedef int (__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3DRENDERSTATETYPE, DWORD);
@@ -540,19 +540,19 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 	g_OriginalzCModel_Render(thisptr, ctx);
 }
 
-int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, D3DTEXTURESTAGESTATETYPE state, DWORD value)
+int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, zTRnd_TextureStageState state, DWORD value)
 {
-	if (state == D3DTSS_MAGFILTER)
+	if (state == zTRnd_TextureStageState::zRND_TSS_MAGFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFG_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3DTSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTEXTUREMAGFILTER::D3DTFG_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zTRnd_TextureStageState::zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
-	else if(state == D3DTSS_MINFILTER)
+	else if(state == zTRnd_TextureStageState::zRND_TSS_MINFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTFN_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3DTSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTEXTUREMINFILTER::D3DTFN_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zTRnd_TextureStageState::zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
@@ -569,22 +569,22 @@ int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3DR
 	// Two Pass Rendering Technique (https://blogs.msdn.microsoft.com/shawnhar/2009/02/18/depth-sorting-alpha-blended-objects/)
 	if (g_vobRenderPass == 1)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHABLENDENABLE, false);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHABLENDENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZENABLE, true);
 	}
 	else if (g_vobRenderPass == 2)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ALPHABLENDENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATE_ZWRITEENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHABLENDENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZWRITEENABLE, false);
 	}
 
 	return S_OK;
