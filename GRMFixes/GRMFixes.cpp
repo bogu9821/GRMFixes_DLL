@@ -44,17 +44,50 @@ oCAniCtrl_HumanSetScriptValues g_OriginaloCAniCtrl_HumanSetScriptValues;
 typedef int (__thiscall* zCModel_Render)(void*, struct zTRenderContext&);
 zCModel_Render g_OriginalzCModel_Render;
 
-typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, D3D7TEXTURESTAGESTATETYPE, DWORD);
+typedef int (__thiscall* zCRND_D3DSetTextureStageState)(void*, DWORD, zTRnd_TextureStageState, DWORD);
 zCRND_D3DSetTextureStageState g_OriginalzCRND_D3DSetTextureStageState;
 
-typedef int(__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3D7RENDERSTATETYPE, DWORD);
+typedef int (__thiscall* zCRND_D3DXD3D_SetRenderState)(void*, D3DRENDERSTATETYPE, DWORD);
 zCRND_D3DXD3D_SetRenderState g_OriginalzCRND_D3DXD3D_SetRenderState;
 
-typedef int(__thiscall* zCTexture_HasAlpha)(void*);
+typedef int (__thiscall* zCTexture_HasAlpha)(void*);
 zCTexture_HasAlpha g_OriginalzCTexture_HasAlpha;
 
-typedef int(__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
+typedef int (__fastcall* zCVob_Render)(void*, struct zTRenderContext&);
 zCVob_Render g_OriginalzCVob_Render;
+
+typedef void(__thiscall* zCSndFX_MSSSetLooping)(void*, zBOOL);
+zCSndFX_MSSSetLooping g_OriginalzCSndFX_MSSSetLooping;
+
+typedef DWORD(__thiscall* zCSndSys_MSSConstructor)(void*);
+zCSndSys_MSSConstructor g_OriginalzCSndSys_MSSConstructor;
+
+typedef zCSoundFX* (__thiscall* zCSndSys_MSSLoadSoundFX)(void*, const zSTRING&);
+zCSndSys_MSSLoadSoundFX g_OriginalzCSndSys_MSSLoadSoundFX;
+
+typedef zTSoundHandle(__thiscall* zCSndSys_MSSPlaySound)(void*, zCSoundFX*, int, int, float, float);
+zCSndSys_MSSPlaySound g_OriginalzCSndSys_MSSPlaySound;
+
+typedef void(__thiscall* zCSndSys_MSSStopSound)(void*, const zTSoundHandle&);
+zCSndSys_MSSStopSound g_OriginalzCSndSys_MSSStopSound;
+
+typedef void(__thiscall* zCSndSys_MSSUpdateSoundProps)(void*, const zTSoundHandle&, int, float, float);
+zCSndSys_MSSUpdateSoundProps g_OriginalzCSndSys_MSSUpdateSoundProps;
+
+typedef DWORD(__thiscall* zCMusicSys_DirectMusicConstructor)(void*);
+zCMusicSys_DirectMusicConstructor g_OriginalzCMusicSys_DirectMusicConstructor;
+
+typedef void(__thiscall* zCMusicSys_DirectMusicSetVolume)(void*, float);
+zCMusicSys_DirectMusicSetVolume g_OriginalzCMusicSys_DirectMusicSetVolume;
+
+typedef void (__thiscall* zCMusicSys_DirectMusicStop)(void*);
+zCMusicSys_DirectMusicStop g_OriginalzCMusicSys_DirectMusicStop;
+
+typedef void (__thiscall* zCMusicSys_DirectMusicPlayThemeByScript)(void*, const zSTRING&, int, int*);
+zCMusicSys_DirectMusicPlayThemeByScript g_OriginalzCMusicSys_DirectMusicPlayThemeByScript;
+
+typedef void (__thiscall* zCMusicSys_DirectMusicPlayTheme)(void*, struct zCMusicTheme*, const float&, const zTMus_TransType&, const zTMus_TransSubType&);
+zCMusicSys_DirectMusicPlayTheme g_OriginalzCMusicSys_DirectMusicPlayTheme;
 
 /* Restores the modified bytes from the given map to their original state */
 void RestoreOriginalCodeBytes(const std::map<unsigned int, unsigned char>& originalMap)
@@ -366,7 +399,7 @@ void AdjustMagicFrontier(const float* bytes, int numBytes, unsigned int addr)
 }
 
 /* Leave a note in the ZEN-File so we know it has been modified data */
-void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* unknwn, const char* line, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* edx, const char* line, struct zCBuffer* buffer, struct zFILE* file)
 {
 	std::string ln = line;
 
@@ -387,13 +420,13 @@ void __fastcall HookedzCArchiverFactoryWriteLine_char(void* thisptr, void* unknw
 }
 
 /* Just proxy this to the char* version */
-void __fastcall HookedzCArchiverFactoryWriteLine(void* thisptr, void* unknwn, const zSTRING& line, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryWriteLine(void* thisptr, void* edx, const zSTRING& line, struct zCBuffer* buffer, struct zFILE* file)
 {
-	HookedzCArchiverFactoryWriteLine_char(thisptr, unknwn, line.ToChar(), buffer, file);	
+	HookedzCArchiverFactoryWriteLine_char(thisptr, edx, line.ToChar(), buffer, file);	
 }
 
 /* Check for properties on top of a ZEN-File */
-void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* unknwn, zSTRING& line, zSTRING& arg, struct zCBuffer* buffer, struct zFILE* file)
+void __fastcall HookedzCArchiverFactoryReadLineArg(void* thisptr, void* edx, zSTRING& line, zSTRING& arg, struct zCBuffer* buffer, struct zFILE* file)
 {
 	// Call original function
 	g_OriginalzCArchiverFactoryReadLineArg(thisptr, line, arg, buffer, file);
@@ -507,19 +540,19 @@ void __fastcall HookedzCModel_Render(void* thisptr, void* edx, struct zTRenderCo
 	g_OriginalzCModel_Render(thisptr, ctx);
 }
 
-int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, D3D7TEXTURESTAGESTATETYPE state, DWORD value)
+int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWORD stage, zTRnd_TextureStageState state, DWORD value)
 {
-	if (state == D3D7TSS_MAGFILTER)
+	if (state == zTRnd_TextureStageState::zRND_TSS_MAGFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFG_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTEXTUREMAGFILTER::D3DTFG_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zTRnd_TextureStageState::zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
-	else if(state == D3D7TSS_MINFILTER)
+	else if(state == zTRnd_TextureStageState::zRND_TSS_MINFILTER)
 	{
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3D7TFN_ANISOTROPIC);
-		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, D3D7TSS_MAXANISOTROPY, g_MaxAnisotropy);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, state, D3DTEXTUREMINFILTER::D3DTFN_ANISOTROPIC);
+		g_OriginalzCRND_D3DSetTextureStageState(thisptr, stage, zTRnd_TextureStageState::zRND_TSS_MAXANISOTROPY, g_MaxAnisotropy);
 
 		return S_OK;
 	}
@@ -529,29 +562,29 @@ int __fastcall HookedzCRND_D3DSetTextureStageState(void* thisptr, void* edx, DWO
 	}	
 }
 
-int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3D7RENDERSTATETYPE state, DWORD value)
+int __fastcall HookedzCRND_D3DXD3D_SetRenderState(void* thisptr, void* edx, D3DRENDERSTATETYPE state, DWORD value)
 {
 	g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, state, value);
 
 	// Two Pass Rendering Technique (https://blogs.msdn.microsoft.com/shawnhar/2009/02/18/depth-sorting-alpha-blended-objects/)
 	if (g_vobRenderPass == 1)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, false);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHABLENDENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZENABLE, true);
 	}
 	else if (g_vobRenderPass == 2)
 	{
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHATESTENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHAREF, 160);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ALPHABLENDENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZENABLE, true);
-		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3D7RENDERSTATE_ZWRITEENABLE, false);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHATESTENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAFUNC, D3DCMP_LESS);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHAREF, 160);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ALPHABLENDENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZENABLE, true);
+		g_OriginalzCRND_D3DXD3D_SetRenderState(thisptr, D3DRENDERSTATETYPE::D3DRENDERSTATE_ZWRITEENABLE, false);
 	}
 
 	return S_OK;
@@ -597,15 +630,267 @@ void __fastcall HookedzCVob_Render(void* thisptr, struct zTRenderContext& ctx)
 	g_vobRenderPass = 0;
 }
 
+void* g_zCSndSys_MSS = NULL;
+void* g_zCMusicSys_DirectMusic = NULL;
+float g_MusicVolume = 0.8F;
+std::string g_currentTheme = std::string("");
+zTSoundHandle g_currentThemeHandle = NULL;
+std::map<std::string, zTSoundHandle> g_themeHandles = std::map<std::string, zTSoundHandle>();
+std::map<std::string, Transition> g_transitions = std::map<std::string, Transition>();
+std::mutex g_themeHandlesMutex;
+std::mutex g_transitionsMutex;
+
+bool file_exist(const char* fileName)
+{
+	std::ifstream infile(fileName);
+	return infile.good();
+}
+
+void AddTransition(std::string fileName, TransitionType type, zTSoundHandle handle, FadeMode mode, int duration)
+{
+	g_transitionsMutex.lock();
+
+	std::map<std::string, Transition>::iterator it = g_transitions.find(fileName);
+
+	if (it == g_transitions.end())
+	{
+		float vol = g_MusicVolume;
+		if (mode == FadeMode::In)
+			vol = 0.0F;
+		else if (mode == FadeMode::Out)
+			vol = g_MusicVolume;
+
+		struct Transition trans = {
+			type,
+			fileName,
+			handle,
+			mode,
+			duration,
+			vol
+		};
+
+		g_transitions.insert(it, std::pair<std::string, Transition>(fileName, trans));
+	}
+	else
+	{
+		assert(std::is_same(it->second.handle, handle));
+		it->second.mode = mode;
+		it->second.duration = duration;
+		// do not change volume
+	}
+
+	g_transitionsMutex.unlock();
+}
+
+void ProcessTransitions()
+{
+	int interval = 100;
+
+	while (true)
+	{
+		g_transitionsMutex.lock();
+
+		for (std::map<std::string, Transition>::iterator it = g_transitions.begin(); it != g_transitions.end(); ++it)
+		{
+			float delta = (it->second.duration > 0) ? 1.0F / (it->second.duration / interval) : 1.0F;
+			if (it->second.mode == FadeMode::In)
+				it->second.volume = std::min(it->second.volume + delta, g_MusicVolume);
+			else if (it->second.mode == FadeMode::Out)
+				it->second.volume = std::max(it->second.volume - delta, 0.0F);
+
+			if (it->second.type == TransitionType::MilesSoundSystem)
+			{
+				g_OriginalzCSndSys_MSSUpdateSoundProps(g_zCSndSys_MSS, it->second.handle, zSND_FREQ_DEFAULT, it->second.volume, zSND_PAN_CENTER);
+			}
+			else if (it->second.type == TransitionType::DirectMusic)
+			{
+				g_OriginalzCMusicSys_DirectMusicSetVolume(g_zCMusicSys_DirectMusic, it->second.volume);
+			}
+
+			if (it->second.duration == 0
+				|| (it->second.mode == FadeMode::In && it->second.volume == g_MusicVolume)
+				|| (it->second.mode == FadeMode::Out && it->second.volume == 0.0F))
+			{
+				if (it->second.mode == FadeMode::Out)
+				{
+					if (it->second.type == TransitionType::MilesSoundSystem)
+					{
+						debugPrint("Stopped MSS!\n");
+						g_OriginalzCSndSys_MSSStopSound(g_zCSndSys_MSS, it->second.handle);
+					}
+					else if (it->second.type == TransitionType::DirectMusic)
+					{
+						debugPrint("Stopped DirectMusic!\n");
+						g_OriginalzCMusicSys_DirectMusicStop(g_zCMusicSys_DirectMusic);
+						g_OriginalzCMusicSys_DirectMusicSetVolume(g_zCMusicSys_DirectMusic, g_MusicVolume);
+					}
+
+					g_themeHandlesMutex.lock();
+					g_themeHandles.erase(it->first);
+					g_themeHandlesMutex.unlock();
+				}
+				g_transitions.erase(it);
+			}
+		}
+
+		g_transitionsMutex.unlock();
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+	}
+}
+
+void __fastcall HookedzCSndFX_MSSSetLooping(void* thisptr, void* edx, zBOOL loop)
+{
+	g_OriginalzCSndFX_MSSSetLooping(thisptr, loop);
+}
+
+DWORD __fastcall HookedzCSndSys_MSSConstructor(void* thisptr, void* edx)
+{
+	assert(std::is_same(g_zCSndSys_MSS, NULL));
+	DWORD result = g_OriginalzCSndSys_MSSConstructor(thisptr);
+	g_zCSndSys_MSS = (void*)result;
+	std::thread(&ProcessTransitions).detach();
+	return result;
+}
+
+zCSoundFX* __fastcall HookedzCSndSys_MSSLoadSoundFX(void* thisptr, void* edx, const zSTRING& fileName)
+{
+	return g_OriginalzCSndSys_MSSLoadSoundFX(thisptr, fileName);
+}
+
+zTSoundHandle __fastcall HookedzCSndSys_MSSPlaySound(void* thisptr, void* edx, zCSoundFX* sfx, int slot, int freq, float vol, float pan)
+{
+	return g_OriginalzCSndSys_MSSPlaySound(thisptr, sfx, slot, freq, vol, pan);
+}
+
+void __fastcall HookedzCSndSys_MSSStopSound(void* thisptr, void* edx, const zTSoundHandle& sfxHandle)
+{
+	g_OriginalzCSndSys_MSSStopSound(thisptr, sfxHandle);
+}
+
+void __fastcall HookedzCSndSys_MSSUpdateSoundProps(void* thisptr, void* edx, const zTSoundHandle& sfxHandle, int freq, float vol, float pan)
+{
+	g_OriginalzCSndSys_MSSUpdateSoundProps(thisptr, sfxHandle, freq, vol, pan);
+}
+
+DWORD __fastcall HookedzCMusicSys_DirectMusicConstructor(void* thisptr, void* edx)
+{
+	assert(std::is_same(g_zCMusicSys_DirectMusic, NULL));
+	DWORD result = g_OriginalzCMusicSys_DirectMusicConstructor(thisptr);
+	g_zCMusicSys_DirectMusic = (void*)result;
+	return result;
+}
+
+void __fastcall HookedzCMusicSys_DirectMusicSetVolume(void* thisptr, void* edx, float vol)
+{
+	g_MusicVolume = vol;
+	if (g_zCSndSys_MSS != NULL && g_currentThemeHandle != NULL)
+	{
+		g_OriginalzCSndSys_MSSUpdateSoundProps(g_zCSndSys_MSS, g_currentThemeHandle, zSND_FREQ_DEFAULT, g_MusicVolume, zSND_PAN_CENTER);
+	}
+}
+
+void __fastcall HookedzCMusicSys_DirectMusicStop(void* thisptr, void* edx)
+{
+	g_OriginalzCMusicSys_DirectMusicStop(thisptr);
+}
+
+void __fastcall HookedzCMusicSys_DirectMusicPlayThemeByScript(void* thisptr, void* edx, const zSTRING& id, const int manipulate, zBOOL* done)
+{
+	if (std::string(id.ToChar()) != "")
+	{
+		debugPrint("Play theme %s!\n", id.ToChar());
+		g_OriginalzCMusicSys_DirectMusicPlayThemeByScript(thisptr, id, manipulate, done);
+	}
+}
+
+void __fastcall HookedzCMusicSys_DirectMusicPlayTheme(void* thisptr, void* edx, struct zCMusicTheme* theme, const float& volume, const zTMus_TransType& tr, const zTMus_TransSubType& trSub)
+{
+	std::string nextTheme(theme->fileName.ToChar());
+	nextTheme = nextTheme.substr(0, nextTheme.find_last_of("."));
+
+	if (g_currentTheme != nextTheme && g_zCSndSys_MSS != NULL)
+	{
+		char exe[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], wave[MAX_PATH];
+		GetModuleFileName(NULL, exe, MAX_PATH);
+		_splitpath(exe, drive, dir, NULL, NULL);
+		strcpy_s(wave, drive);
+		strcat_s(wave, dir);
+		strcat_s(wave, "..\\_work\\DATA\\Sound\\SFX\\");
+		strcat_s(wave, nextTheme.c_str());
+		strcat_s(wave, ".wav");
+		_fullpath(wave, wave, MAX_PATH);
+
+		int fadeOut = 3000;
+		int fadeIn = 3000;
+
+		zTMus_TransType trType = (tr == zMUS_TR_DEFAULT) ? theme->trType : tr;
+
+		if (trType == zTMus_TransType::zMUS_TR_NONE)
+		{
+			fadeOut = 500;
+			fadeIn = 0;
+		}
+		else if (trType == zTMus_TransType::zMUS_TR_FILL)
+		{
+			fadeOut = 1000;
+			fadeIn = 2000;
+		}
+
+		if (g_currentThemeHandle != NULL)
+		{
+			std::thread(&AddTransition, g_currentTheme, TransitionType::MilesSoundSystem, g_currentThemeHandle, FadeMode::Out, fadeOut).detach();
+		}
+		else
+		{
+			std::thread(&AddTransition, "", TransitionType::DirectMusic, NULL, FadeMode::Out, fadeOut).detach();
+		}
+
+		if (file_exist(wave))
+		{
+			debugPrint("Playing %s.wav..\n", nextTheme.c_str());
+
+			g_themeHandlesMutex.lock();
+
+			std::map<std::string, zTSoundHandle>::iterator it = g_themeHandles.find(nextTheme);
+
+			if (it == g_themeHandles.end())
+			{
+				zCSoundFX* soundFx = g_OriginalzCSndSys_MSSLoadSoundFX(g_zCSndSys_MSS, (nextTheme + ".wav").c_str());
+				g_OriginalzCSndFX_MSSSetLooping(soundFx, TRUE);
+				g_currentThemeHandle = g_OriginalzCSndSys_MSSPlaySound(g_zCSndSys_MSS, soundFx, zSND_SLOT_NONE, zSND_FREQ_DEFAULT, 0.0F, zSND_PAN_CENTER);
+				g_themeHandles.insert(g_themeHandles.end(), std::pair<std::string, zTSoundHandle>(nextTheme, g_currentThemeHandle));
+			}
+			else
+			{
+				g_currentThemeHandle = it->second;
+			}
+
+			g_themeHandlesMutex.unlock();
+
+			std::thread(&AddTransition, nextTheme, TransitionType::MilesSoundSystem, g_currentThemeHandle, FadeMode::In, fadeIn).detach();
+		}
+		else
+		{
+			debugPrint("Playing %s.sgt..\n", nextTheme.c_str());
+			g_currentThemeHandle = NULL;
+			g_OriginalzCMusicSys_DirectMusicPlayTheme(thisptr, theme, volume, tr, trSub);
+			std::thread(&AddTransition, "", TransitionType::DirectMusic, NULL, FadeMode::In, fadeIn).detach();
+		}
+
+		g_currentTheme = nextTheme;
+	}
+}
+
 #endif
 
 /* Hook functions */
 void ApplyHooks()
 {
 	debugPrint("-------- GRM-Fix-Collection by Degenerated - Version 8 for " DLL_TYPE_STR " --------\n");
+
 	debugPrint("Applying hook to 'zCArchiverFactory::ReadLineArg'\n");
 	g_OriginalzCArchiverFactoryReadLineArg = (zCArchiverFactoryReadLineArg)DetourFunction((byte*)GothicMemoryLocations::zCArchiverFactory::ReadLineArg, (byte*)HookedzCArchiverFactoryReadLineArg);
-
 	if(g_OriginalzCArchiverFactoryReadLineArg)
 		debugPrint(" - Success!\n");
 	else
@@ -671,6 +956,84 @@ void ApplyHooks()
 	debugPrint("Applying hook to 'oCAniCtrl_Human::SetScriptValues'\n");
 	g_OriginaloCAniCtrl_HumanSetScriptValues =  (oCAniCtrl_HumanSetScriptValues)DetourFunction((byte*)GothicMemoryLocations::oCAniCtrl_Human::SetScriptValues, (byte*)HookedoCAniCtrl_HumanSetScriptValues);
 	if(g_OriginaloCAniCtrl_HumanSetScriptValues)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndFX_MSS::SetLooping'\n");
+	g_OriginalzCSndFX_MSSSetLooping = (zCSndFX_MSSSetLooping)DetourFunction((byte*)GothicMemoryLocations::zCSndFX_MSS::SetLooping, (byte*)HookedzCSndFX_MSSSetLooping);
+	if (g_OriginalzCSndFX_MSSSetLooping)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndSys_MSS::Constructor'\n");
+	g_OriginalzCSndSys_MSSConstructor = (zCSndSys_MSSConstructor)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::Constructor, (byte*)HookedzCSndSys_MSSConstructor);
+	if (g_OriginalzCSndSys_MSSConstructor)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndSys_MSS::LoadSoundFX'\n");
+	g_OriginalzCSndSys_MSSLoadSoundFX = (zCSndSys_MSSLoadSoundFX)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::LoadSoundFX, (byte*)HookedzCSndSys_MSSLoadSoundFX);
+	if (g_OriginalzCSndSys_MSSLoadSoundFX)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+
+	debugPrint("Applying hook to 'zCSndSys_MSS::PlaySound'\n");
+	g_OriginalzCSndSys_MSSPlaySound = (zCSndSys_MSSPlaySound)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::PlaySound, (byte*)HookedzCSndSys_MSSPlaySound);
+	if (g_OriginalzCSndSys_MSSPlaySound)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndSys_MSS::StopSound'\n");
+	g_OriginalzCSndSys_MSSStopSound = (zCSndSys_MSSStopSound)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::StopSound, (byte*)HookedzCSndSys_MSSStopSound);
+	if (g_OriginalzCSndSys_MSSStopSound)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCSndSys_MSS::UpdateSoundProps'\n");
+	g_OriginalzCSndSys_MSSUpdateSoundProps = (zCSndSys_MSSUpdateSoundProps)DetourFunction((byte*)GothicMemoryLocations::zCSndSys_MSS::UpdateSoundProps, (byte*)HookedzCSndSys_MSSUpdateSoundProps);
+	if (g_OriginalzCSndSys_MSSUpdateSoundProps)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::Constructor'\n");
+	g_OriginalzCMusicSys_DirectMusicConstructor = (zCMusicSys_DirectMusicConstructor)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::Constructor, (byte*)HookedzCMusicSys_DirectMusicConstructor);
+	if (g_OriginalzCMusicSys_DirectMusicConstructor)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::SetVolume'\n");
+	g_OriginalzCMusicSys_DirectMusicSetVolume = (zCMusicSys_DirectMusicSetVolume)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::SetVolume, (byte*)HookedzCMusicSys_DirectMusicSetVolume);
+	if (g_OriginalzCMusicSys_DirectMusicSetVolume)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::Stop'\n");
+	g_OriginalzCMusicSys_DirectMusicStop = (zCMusicSys_DirectMusicStop)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::Stop, (byte*)HookedzCMusicSys_DirectMusicStop);
+	if (g_OriginalzCMusicSys_DirectMusicStop)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::PlayThemeByScript'\n");
+	g_OriginalzCMusicSys_DirectMusicPlayThemeByScript = (zCMusicSys_DirectMusicPlayThemeByScript)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::PlayThemeByScript, (byte*)HookedzCMusicSys_DirectMusicPlayThemeByScript);
+	if (g_OriginalzCMusicSys_DirectMusicPlayThemeByScript)
+		debugPrint(" - Success!\n");
+	else
+		debugPrint(" - Failure!\n");
+
+	debugPrint("Applying hook to 'zCMusicSys_DirectMusic::PlayTheme'\n");
+	g_OriginalzCMusicSys_DirectMusicPlayTheme = (zCMusicSys_DirectMusicPlayTheme)DetourFunction((byte*)GothicMemoryLocations::zCMusicSys_DirectMusic::PlayTheme, (byte*)HookedzCMusicSys_DirectMusicPlayTheme);
+	if (g_OriginalzCMusicSys_DirectMusicPlayTheme)
 		debugPrint(" - Success!\n");
 	else
 		debugPrint(" - Failure!\n");

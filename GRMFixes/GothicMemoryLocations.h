@@ -18,73 +18,6 @@
 #define GothicMemoryLocations GothicMemoryLocations_Spacer
 #endif
 
-struct float3
-{
-	float x,y,z;
-};
-
-struct float2
-{
-	float x,y,z;
-};
-
-struct zCVertex
-{
-	float3 Position;
-
-	int TransformedIndex;
-	int MyIndex;
-};
-
-struct zCVertFeature
-{
-	float3 normal;
-	DWORD lightStatic;
-	DWORD lightDynamic;
-	float2 texCoord;
-};
-
-struct zTPlane
-{
-	float Distance;
-	float3 Normal;
-};
-
-class zCVob;
-class zCVisual;
-class zCMaterial;
-class zCLightMap;
-struct zCPolygon
-{
-	zCVertex** Vertices;
-	int LastTimeDrawn;
-	zTPlane	PolyPlane;
-	zCMaterial* Material;
-	zCLightMap* Lightmap;
-	zCVertex** ClipVertices;
-	zCVertFeature** ClipFeatures;
-	int NumClipVert;	
-	zCVertFeature** Features;
-	unsigned char PolyNumVert;
-};
-
-struct zCMesh
-{
-	char data[0x34];
-
-	int				numPoly;
-	int				numVert;
-	int             numFeat;
-
-	zCVertex		**vertList;
-	zCPolygon		**polyList;
-	zCVertFeature   **featList;
-
-	zCVertex        *vertArray;
-	zCPolygon       *polyArray;
-	zCVertFeature   *featArray;
-};
-
 struct GothicMemoryLocations_Game
 {
 	struct LoadBin
@@ -184,6 +117,29 @@ struct GothicMemoryLocations_Game
 	{
 		static const int Offset_Name = 0x10;
 	};
+
+	struct zCSndFX_MSS
+	{
+		static const int SetLooping = 0x004E8380;
+	};
+
+	struct zCSndSys_MSS
+	{
+		static const int Constructor = 0x004DD530;
+		static const int LoadSoundFX = 0x004E0370;
+		static const int PlaySound = 0x004E3220;
+		static const int StopSound = 0x004E4610;
+		static const int UpdateSoundProps = 0x004E5A20;
+	};
+
+	struct zCMusicSys_DirectMusic
+	{
+		static const int Constructor = 0x004DA270;
+		static const int SetVolume = 0x004DCC80;
+		static const int Stop = 0x004DCBF0;
+		static const int PlayThemeByScript = 0x004DB850;
+		static const int PlayTheme = 0x004DC4E0;
+	};
 };
 
 struct GothicMemoryLocations_Spacer
@@ -269,20 +225,4 @@ struct GothicMemoryLocations_Spacer
 		static const unsigned int Offset_ModelFatness = 0x118;
 		static const unsigned int Offset_ModelScale = 0x11C;
 	};
-};
-
-class zSTRING
-{
-public:
-	zSTRING(const char* str)
-	{
-		XCALL(GothicMemoryLocations::zSTRING::ConstructorCharPtr);
-	}
-
-	const char* ToChar() const
-	{
-		XCALL(GothicMemoryLocations::zSTRING::ToChar);
-	}
-
-	char data[20];
 };
